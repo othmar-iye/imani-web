@@ -209,13 +209,7 @@
   font-size: 32px;
   font-weight: 700;
   color: #111827;
-  margin: 0 0 4px 0;
-}
-
-.stat-change {
-  font-size: 13px;
-  color: #10b981;
-  font-weight: 500;
+  margin: 0;
 }
 
 .stat-icon {
@@ -244,6 +238,9 @@
   padding: 1.5rem 2rem;
   border-bottom: 1px solid #f1f5f9;
   background: #fafbfc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .section-header h2 {
@@ -309,11 +306,6 @@
 .status-inactive {
   background: #fee2e2;
   color: #991b1b;
-}
-
-.status-stock {
-  background: #dbeafe;
-  color: #1e40af;
 }
 
 /* Styles pour le contenu des pages */

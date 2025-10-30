@@ -25,9 +25,6 @@ const Login = () => {
     <div className="login-container">
       <div className="login-form">
         <div className="brand-header">
-          <div className="brand-logo">
-            <div className="logo-icon">I</div>
-          </div>
           <h1>Connectez-vous à IMANI</h1>
           <p>Accédez à votre espace administrateur</p>
         </div>
@@ -62,7 +59,7 @@ const Login = () => {
           {error && <div className="error-message">{error}</div>}
 
           <button type="submit" className="login-button">
-            Se connecter à son compte
+            Se connecter
           </button>
         </form>
 

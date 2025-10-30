@@ -11,25 +11,21 @@ const Dashboard = () => {
     { 
       title: 'Utilisateurs Totaux', 
       value: '12,402', 
-      change: '+12%', 
       icon: '👥' 
     },
     { 
       title: 'Produits Actifs', 
       value: '1,248', 
-      change: '+8%', 
       icon: '📦' 
     },
     { 
       title: 'Revenus Mensuels', 
-      value: '€24,802', 
-      change: '+23%', 
+      value: '$24,802', 
       icon: '💰' 
     },
     { 
       title: 'Commandes', 
       value: '4,210', 
-      change: '+15%', 
       icon: '🛒' 
     }
   ];
@@ -102,7 +98,6 @@ const Dashboard = () => {
                     <div className="stat-info">
                       <h3>{stat.title}</h3>
                       <p className="stat-number">{stat.value}</p>
-                      <div className="stat-change">{stat.change} vs mois dernier</div>
                     </div>
                     <div className="stat-icon">
                       {stat.icon}
@@ -145,64 +140,6 @@ const Dashboard = () => {
                         <td>{user.date}</td>
                       </tr>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Produits Populaires */}
-            <div className="content-section">
-              <div className="section-header">
-                <h2>Produits Populaires</h2>
-                <button className="view-all-btn" onClick={() => setActiveMenu('produit')}>
-                  Voir tout →
-                </button>
-              </div>
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Produit</th>
-                      <th>Catégorie</th>
-                      <th>Prix</th>
-                      <th>Ventes</th>
-                      <th>Statut</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ fontWeight: '600', color: '#111827' }}>Produit Alpha</td>
-                      <td>Électronique</td>
-                      <td>€299</td>
-                      <td>1,402</td>
-                      <td>
-                        <span className="status-badge status-stock">
-                          En stock
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style={{ fontWeight: '600', color: '#111827' }}>Produit Beta</td>
-                      <td>Mode</td>
-                      <td>€89</td>
-                      <td>892</td>
-                      <td>
-                        <span className="status-badge status-inactive">
-                          Rupture
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style={{ fontWeight: '600', color: '#111827' }}>Produit Gamma</td>
-                      <td>Maison</td>
-                      <td>€156</td>
-                      <td>1,203</td>
-                      <td>
-                        <span className="status-badge status-stock">
-                          En stock
-                        </span>
-                      </td>
-                    </tr>
                   </tbody>
                 </table>
               </div>
