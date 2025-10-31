@@ -1,40 +1,77 @@
-import React, { useState } from 'react';
+// Dashboard.js
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../config/supabase';
 import './css/Dashboard.css';
 import Users from './Users';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const [activeMenu, setActiveMenu] = useState('dashboard');
+  const [recentUsers, setRecentUsers] = useState([]);
+  const [usersCount, setUsersCount] = useState(0);
+  const [sellersCount, setSellersCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
+  // Récupérer les utilisateurs récents depuis Supabase
+  const fetchRecentUsers = async () => {
+    try {
+      setLoading(true);
+      
+      // Récupérer les 10 utilisateurs les plus récents
+      const { data: usersData, error: usersError } = await supabase
+        .from('auth_users_view')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10); // Maintenant 10 au lieu de 5
+
+      if (usersError) throw usersError;
+
+      // Récupérer le nombre total d'utilisateurs
+      const { count: totalUsers, error: countError } = await supabase
+        .from('auth_users_view')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) throw countError;
+
+      // Récupérer le nombre de vendeurs
+      const { count: totalSellers, error: sellersError } = await supabase
+        .from('user_profiles')
+        .select('*', { count: 'exact', head: true });
+
+      if (sellersError) throw sellersError;
+
+      setRecentUsers(usersData || []);
+      setUsersCount(totalUsers || 0);
+      setSellersCount(totalSellers || 0);
+      
+    } catch (error) {
+      console.error('Erreur récupération users récents:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeMenu === 'dashboard') {
+      fetchRecentUsers();
+    }
+  }, [activeMenu]);
+
+  // Stats simplifiées - seulement Utilisateurs et Vendeurs
   const statsData = [
     { 
       title: 'Utilisateurs Totaux', 
-      value: '12,402', 
-      icon: '👥' 
+      value: usersCount.toString(),
+      icon: '👥',
+      color: '#3B82F6'
     },
     { 
-      title: 'Produits Actifs', 
-      value: '1,248', 
-      icon: '📦' 
-    },
-    { 
-      title: 'Revenus Mensuels', 
-      value: '$24,802', 
-      icon: '💰' 
-    },
-    { 
-      title: 'Commandes', 
-      value: '4,210', 
-      icon: '🛒' 
+      title: 'Vendeurs', 
+      value: sellersCount.toString(), 
+      icon: '🛒',
+      color: '#10B981'
     }
-  ];
-
-  const recentUsers = [
-    { id: 1, name: 'Marie Dubois', email: 'marie.dubois@email.com', status: 'Actif', date: '2024-01-15' },
-    { id: 2, name: 'Jean Martin', email: 'jean.martin@email.com', status: 'Actif', date: '2024-01-14' },
-    { id: 3, name: 'Sophie Lambert', email: 'sophie.lambert@email.com', status: 'Inactif', date: '2024-01-13' },
-    { id: 4, name: 'Pierre Moreau', email: 'pierre.moreau@email.com', status: 'Actif', date: '2024-01-12' }
   ];
 
   const menuItems = [
@@ -44,6 +81,31 @@ const Dashboard = () => {
     { id: 'finance', label: 'Finance', icon: '💰' }
   ];
 
+  // Fonction pour formater la date
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  // Fonction pour obtenir le statut
+  const getUserStatus = (user) => {
+    if (user.last_sign_in_at) {
+      return 'Actif';
+    }
+    return user.email_confirmed ? 'Confirmé' : 'En attente';
+  };
+
+  // Fonction pour obtenir la classe CSS du statut
+  const getStatusClass = (user) => {
+    if (user.last_sign_in_at) {
+      return 'status-active';
+    }
+    return user.email_confirmed ? 'status-confirmed' : 'status-pending';
+  };
+
   // Fonction pour rendre le contenu en fonction du menu actif
   const renderContent = () => {
     switch (activeMenu) {
@@ -52,15 +114,6 @@ const Dashboard = () => {
       case 'produit':
         return (
           <div className="page-content">
-            <div className="page-header">
-              <div className="header-title">
-                <h1>Gestion des Produits</h1>
-                <p>Gérez votre catalogue de produits IMANI</p>
-              </div>
-              <button className="add-btn">
-                + Ajouter un produit
-              </button>
-            </div>
             <div className="coming-soon">
               <div className="coming-soon-icon">📦</div>
               <h2>Section Produits</h2>
@@ -71,15 +124,6 @@ const Dashboard = () => {
       case 'finance':
         return (
           <div className="page-content">
-            <div className="page-header">
-              <div className="header-title">
-                <h1>Gestion Financière</h1>
-                <p>Suivez vos revenus et analyses financières</p>
-              </div>
-              <button className="add-btn">
-                📊 Générer rapport
-              </button>
-            </div>
             <div className="coming-soon">
               <div className="coming-soon-icon">💰</div>
               <h2>Section Finance</h2>
@@ -90,7 +134,7 @@ const Dashboard = () => {
       default:
         return (
           <div className="dashboard-content">
-            {/* Cartes de Statistiques */}
+            {/* Cartes de Statistiques - Maintenant seulement 2 */}
             <div className="stats-grid">
               {statsData.map((stat, index) => (
                 <div key={index} className="stat-card">
@@ -99,7 +143,10 @@ const Dashboard = () => {
                       <h3>{stat.title}</h3>
                       <p className="stat-number">{stat.value}</p>
                     </div>
-                    <div className="stat-icon">
+                    <div 
+                      className="stat-icon"
+                      style={{ backgroundColor: `${stat.color}15`, color: stat.color }}
+                    >
                       {stat.icon}
                     </div>
                   </div>
@@ -107,42 +154,69 @@ const Dashboard = () => {
               ))}
             </div>
 
-            {/* Utilisateurs Récents */}
+            {/* Utilisateurs Récents - Maintenant 10 utilisateurs */}
             <div className="content-section">
               <div className="section-header">
                 <h2>Utilisateurs Récents</h2>
-                <button className="view-all-btn" onClick={() => setActiveMenu('utilisateur')}>
-                  Voir tout →
-                </button>
+                <div className="section-actions">
+                  <button className="refresh-btn" onClick={fetchRecentUsers} title="Actualiser">
+                    🔄
+                  </button>
+                  <button className="view-all-btn" onClick={() => setActiveMenu('utilisateur')}>
+                    Voir tout →
+                  </button>
+                </div>
               </div>
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Nom</th>
-                      <th>Email</th>
-                      <th>Statut</th>
-                      <th>Date d'inscription</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentUsers.map(user => (
-                      <tr key={user.id}>
-                        <td style={{ fontWeight: '600', color: '#111827' }}>{user.name}</td>
-                        <td>{user.email}</td>
-                        <td>
-                          <span className={`status-badge ${
-                            user.status === 'Actif' ? 'status-active' : 'status-inactive'
-                          }`}>
-                            {user.status}
-                          </span>
-                        </td>
-                        <td>{user.date}</td>
+              
+              {loading ? (
+                <div className="loading-users">
+                  <p>Chargement des utilisateurs...</p>
+                </div>
+              ) : (
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Nom</th>
+                        <th>Email</th>
+                        <th>Statut</th>
+                        <th>Date d'inscription</th>
+                        <th>Dernière connexion</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {recentUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="no-data">
+                            Aucun utilisateur inscrit pour le moment
+                          </td>
+                        </tr>
+                      ) : (
+                        recentUsers.map(user => (
+                          <tr key={user.id}>
+                            <td style={{ fontWeight: '600', color: '#111827' }}>
+                              {user.full_name || 'Non renseigné'}
+                            </td>
+                            <td>{user.email}</td>
+                            <td>
+                              <span className={`status-badge ${getStatusClass(user)}`}>
+                                {getUserStatus(user)}
+                              </span>
+                            </td>
+                            <td>{formatDate(user.created_at)}</td>
+                            <td>
+                              {user.last_sign_in_at 
+                                ? formatDate(user.last_sign_in_at) 
+                                : 'Jamais'
+                              }
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         );

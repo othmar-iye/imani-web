@@ -399,3 +399,48 @@
   margin: 0;
   font-size: 14px;
 }
+/* Ajoute dans Dashboard.css */
+.section-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.refresh-btn {
+  padding: 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.status-confirmed {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FDE68A;
+}
+
+.status-pending {
+  background: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #FECACA;
+}
+
+.loading-users {
+  text-align: center;
+  padding: 2rem;
+  color: #6B7280;
+}
+
+.no-data {
+  text-align: center;
+  padding: 2rem;
+  color: #6B7280;
+  font-style: italic;
+}
