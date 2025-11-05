@@ -8,13 +8,15 @@ const Users = () => {
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('users'); // 'users', 'sellers'
+  const [activeTab, setActiveTab] = useState('users');
+  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
       
-      // Récupérer les utilisateurs auth
       const { data: usersData, error: usersError } = await supabase
         .from('auth_users_view')
         .select('*')
@@ -22,7 +24,6 @@ const Users = () => {
 
       if (usersError) throw usersError;
 
-      // Récupérer les profils utilisateurs
       const { data: profilesData, error: profilesError } = await supabase
         .from('user_profiles')
         .select('*')
@@ -43,6 +44,125 @@ const Users = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Fonction pour approuver un vendeur
+  const approveSeller = async (profileId) => {
+    try {
+      setActionLoading(true);
+      console.log('🔄 Tentative d\'approbation pour:', profileId);
+      
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update({ 
+          verification_status: 'verified',
+          user_role: 'seller_verified',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', profileId)
+        .select();
+
+      if (error) {
+        console.error('❌ Erreur Supabase:', error);
+        throw error;
+      }
+
+      console.log('✅ Réponse Supabase:', data);
+
+      // Mettre à jour l'état local
+      setProfiles(prev => prev.map(profile => 
+        profile.id === profileId 
+          ? { 
+              ...profile, 
+              verification_status: 'verified', 
+              user_role: 'seller_verified',
+              updated_at: new Date().toISOString() 
+            }
+          : profile
+      ));
+
+      // Mettre à jour le profil sélectionné si le modal est ouvert
+      if (selectedProfile && selectedProfile.id === profileId) {
+        setSelectedProfile(prev => ({
+          ...prev,
+          verification_status: 'verified',
+          user_role: 'seller_verified',
+          updated_at: new Date().toISOString()
+        }));
+      }
+
+      console.log('✅ Vendeur approuvé avec succès:', profileId);
+      
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'approbation:', error);
+      alert('Erreur lors de l\'approbation du vendeur: ' + error.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Fonction pour rejeter un vendeur
+  const rejectSeller = async (profileId) => {
+    try {
+      setActionLoading(true);
+      console.log('🔄 Tentative de rejet pour:', profileId);
+      
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update({ 
+          verification_status: 'rejected',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', profileId)
+        .select();
+
+      if (error) {
+        console.error('❌ Erreur Supabase:', error);
+        throw error;
+      }
+
+      console.log('✅ Réponse Supabase:', data);
+
+      // Mettre à jour l'état local
+      setProfiles(prev => prev.map(profile => 
+        profile.id === profileId 
+          ? { ...profile, verification_status: 'rejected', updated_at: new Date().toISOString() }
+          : profile
+      ));
+
+      // Mettre à jour le profil sélectionné si le modal est ouvert
+      if (selectedProfile && selectedProfile.id === profileId) {
+        setSelectedProfile(prev => ({
+          ...prev,
+          verification_status: 'rejected',
+          updated_at: new Date().toISOString()
+        }));
+      }
+
+      console.log('❌ Vendeur rejeté avec succès:', profileId);
+      
+    } catch (error) {
+      console.error('❌ Erreur lors du rejet:', error);
+      alert('Erreur lors du rejet du vendeur: ' + error.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Ouvrir le modal de détails
+  const openProfileDetails = (profile) => {
+    const user = users.find(u => u.id === profile.id);
+    setSelectedProfile({
+      ...profile,
+      user: user || {}
+    });
+    setShowModal(true);
+  };
+
+  // Fermer le modal
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedProfile(null);
+  };
 
   // Filtrer les données basé sur la recherche
   const filteredUsers = users.filter(user =>
@@ -106,6 +226,16 @@ const Users = () => {
       month: '2-digit',
       year: 'numeric'
     });
+  };
+
+  // Fonction pour formater le type de pièce
+  const getIdentityTypeLabel = (type) => {
+    switch (type) {
+      case 'voter_card': return 'Carte électeur';
+      case 'passport': return 'Passeport';
+      case 'driving_license': return 'Permis conduire';
+      default: return 'Non renseigné';
+    }
   };
 
   // Trouver le profil correspondant à un user
@@ -305,25 +435,27 @@ const Users = () => {
                             <button 
                               className="action-btn view" 
                               title="Voir détails"
-                              onClick={() => console.log('Voir profil:', profile.id)}
+                              onClick={() => openProfileDetails(profile)}
                             >
-                              👁️
+                              Voir
                             </button>
                             {profile.verification_status === 'pending_review' && (
                               <>
                                 <button 
                                   className="action-btn approve" 
                                   title="Approuver"
-                                  onClick={() => console.log('Approuver:', profile.id)}
+                                  onClick={() => approveSeller(profile.id)}
+                                  disabled={actionLoading}
                                 >
-                                  ✅
+                                  {actionLoading ? '...' : '✅'}
                                 </button>
                                 <button 
                                   className="action-btn reject" 
                                   title="Rejeter"
-                                  onClick={() => console.log('Rejeter:', profile.id)}
+                                  onClick={() => rejectSeller(profile.id)}
+                                  disabled={actionLoading}
                                 >
-                                  ❌
+                                  {actionLoading ? '...' : '❌'}
                                 </button>
                               </>
                             )}
@@ -335,6 +467,140 @@ const Users = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de détails du profil */}
+      {showModal && selectedProfile && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Détails du Vendeur</h2>
+              <button className="modal-close" onClick={closeModal}>×</button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="profile-section">
+                <h3>Informations Personnelles</h3>
+                <div className="info-grid">
+                  <div className="info-item">
+                    <label>Nom complet:</label>
+                    <span>{selectedProfile.user?.full_name || 'Non renseigné'}</span>
+                  </div>
+                  <div className="info-item">
+                    <label>Email:</label>
+                    <span>{selectedProfile.user?.email || 'Non disponible'}</span>
+                  </div>
+                  <div className="info-item">
+                    <label>Téléphone:</label>
+                    <span>{selectedProfile.phone_number || 'Non renseigné'}</span>
+                  </div>
+                  <div className="info-item">
+                    <label>Date de naissance:</label>
+                    <span>{selectedProfile.birth_date ? formatDate(selectedProfile.birth_date) : 'Non renseignée'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="profile-section">
+                <h3>Localisation</h3>
+                <div className="info-grid">
+                  <div className="info-item">
+                    <label>Adresse:</label>
+                    <span>{selectedProfile.address || 'Non renseignée'}</span>
+                  </div>
+                  <div className="info-item">
+                    <label>Ville:</label>
+                    <span>{selectedProfile.city || 'Non renseignée'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="profile-section">
+                <h3>Vérification d'Identité</h3>
+                <div className="info-grid">
+                  <div className="info-item">
+                    <label>Type de pièce:</label>
+                    <span>{getIdentityTypeLabel(selectedProfile.identity_type)}</span>
+                  </div>
+                  <div className="info-item">
+                    <label>Numéro de pièce:</label>
+                    <span>{selectedProfile.identity_number || 'Non renseigné'}</span>
+                  </div>
+                  <div className="info-item">
+                    <label>Statut:</label>
+                    <span className={`status-badge ${getVerificationClass(selectedProfile)}`}>
+                      {getVerificationStatus(selectedProfile)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {selectedProfile.profile_picture_url && (
+                <div className="profile-section">
+                  <h3>Photo de Profil</h3>
+                  <div className="profile-image-container">
+                    <img 
+                      src={selectedProfile.profile_picture_url} 
+                      alt="Profil" 
+                      className="profile-image"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                    <div className="image-placeholder">
+                      📷 Image non chargée
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedProfile.identity_document_url && (
+                <div className="profile-section">
+                  <h3>Document d'Identité</h3>
+                  <div className="document-container">
+                    <img 
+                      src={selectedProfile.identity_document_url} 
+                      alt="Document d'identité" 
+                      className="document-image"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                    <div className="image-placeholder">
+                      📄 Document non chargé
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={closeModal}>
+                Fermer
+              </button>
+              {selectedProfile.verification_status === 'pending_review' && (
+                <div className="verification-actions">
+                  <button 
+                    className="btn-success" 
+                    onClick={() => approveSeller(selectedProfile.id)}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? 'Traitement...' : '✅ Approuver'}
+                  </button>
+                  <button 
+                    className="btn-danger" 
+                    onClick={() => rejectSeller(selectedProfile.id)}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? 'Traitement...' : '❌ Rejeter'}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
