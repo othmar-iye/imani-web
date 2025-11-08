@@ -13,6 +13,39 @@ const Users = () => {
   const [showModal, setShowModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Fonction pour créer une notification
+  const createNotification = async (userId, translationKey, type = 'seller', actionUrl = null) => {
+    try {
+      console.log('📨 Création notification:', { userId, translationKey, type });
+      
+      const { data, error } = await supabase
+        .from('notifications')
+        .insert([
+          {
+            user_id: userId,
+            translation_key: translationKey,
+            type: type,
+            status: 'unread',
+            action_url: actionUrl,
+            translation_params: {} // Peut être étendu si besoin de variables
+          }
+        ])
+        .select();
+
+      if (error) {
+        console.error('❌ Erreur création notification:', error);
+        throw error;
+      }
+
+      console.log('✅ Notification créée:', data[0]);
+      return data[0];
+    } catch (error) {
+      console.error('❌ Erreur création notification:', error);
+      // Ne pas throw pour ne pas bloquer le processus principal
+      return null;
+    }
+  };
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -51,6 +84,7 @@ const Users = () => {
       setActionLoading(true);
       console.log('🔄 Tentative d\'approbation pour:', profileId);
       
+      // 1. Mettre à jour le statut du vendeur
       const { data, error } = await supabase
         .from('user_profiles')
         .update({ 
@@ -68,7 +102,19 @@ const Users = () => {
 
       console.log('✅ Réponse Supabase:', data);
 
-      // Mettre à jour l'état local
+      // 2. ✅ CRÉER LA NOTIFICATION D'APPROBATION
+      const notificationResult = await createNotification(
+        profileId,
+        'notifications.messages.sellerApproved',
+        'seller',
+        '/(tabs)/sell'
+      );
+
+      if (!notificationResult) {
+        console.warn('⚠️ Notification non créée, mais vendeur approuvé');
+      }
+
+      // 3. Mettre à jour l'état local
       setProfiles(prev => prev.map(profile => 
         profile.id === profileId 
           ? { 
@@ -80,7 +126,7 @@ const Users = () => {
           : profile
       ));
 
-      // Mettre à jour le profil sélectionné si le modal est ouvert
+      // 4. Mettre à jour le profil sélectionné si le modal est ouvert
       if (selectedProfile && selectedProfile.id === profileId) {
         setSelectedProfile(prev => ({
           ...prev,
@@ -90,7 +136,7 @@ const Users = () => {
         }));
       }
 
-      console.log('✅ Vendeur approuvé avec succès:', profileId);
+      console.log('✅ Vendeur approuvé et notification créée:', profileId);
       
     } catch (error) {
       console.error('❌ Erreur lors de l\'approbation:', error);
@@ -106,6 +152,7 @@ const Users = () => {
       setActionLoading(true);
       console.log('🔄 Tentative de rejet pour:', profileId);
       
+      // 1. Mettre à jour le statut du vendeur
       const { data, error } = await supabase
         .from('user_profiles')
         .update({ 
@@ -122,14 +169,26 @@ const Users = () => {
 
       console.log('✅ Réponse Supabase:', data);
 
-      // Mettre à jour l'état local
+      // 2. ✅ CRÉER LA NOTIFICATION DE REJET
+      const notificationResult = await createNotification(
+        profileId,
+        'notifications.messages.sellerRejected',
+        'seller',
+        '/(tabs)/profile'
+      );
+
+      if (!notificationResult) {
+        console.warn('⚠️ Notification non créée, mais vendeur rejeté');
+      }
+
+      // 3. Mettre à jour l'état local
       setProfiles(prev => prev.map(profile => 
         profile.id === profileId 
           ? { ...profile, verification_status: 'rejected', updated_at: new Date().toISOString() }
           : profile
       ));
 
-      // Mettre à jour le profil sélectionné si le modal est ouvert
+      // 4. Mettre à jour le profil sélectionné si le modal est ouvert
       if (selectedProfile && selectedProfile.id === profileId) {
         setSelectedProfile(prev => ({
           ...prev,
@@ -138,7 +197,7 @@ const Users = () => {
         }));
       }
 
-      console.log('❌ Vendeur rejeté avec succès:', profileId);
+      console.log('❌ Vendeur rejeté et notification créée:', profileId);
       
     } catch (error) {
       console.error('❌ Erreur lors du rejet:', error);

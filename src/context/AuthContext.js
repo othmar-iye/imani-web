@@ -13,7 +13,7 @@ export const AuthProvider = ({ children }) => {
   const login = (email, password) => {
     console.log('Tentative de connexion avec:', email, password); // DEBUG
     
-    if (email === 'admin@imani.com' && password === 'qqqqqq') {
+    if (email === 'admin@imani.com' && password === 'Lothus@1111') {
         console.log('Connexion réussie!'); // DEBUG
         setIsAuthenticated(true);
         setUser({ email, name: 'Admin Imani' });
