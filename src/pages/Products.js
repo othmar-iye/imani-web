@@ -109,7 +109,7 @@ const Products = () => {
     console.log('✅ UPDATE réussi:', data);
 
     // 3. PUIS notification
-    const notificationResult = await createNotification(
+    await createNotification(
       product.seller_id,
       'notifications.messages.productApproved',
       'product',
