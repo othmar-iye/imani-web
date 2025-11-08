@@ -160,17 +160,13 @@ const Products = () => {
       // 2. ✅ CRÉER LA NOTIFICATION DE REJET
       const product = products.find(p => p.id === productId);
       if (product) {
-        const notificationResult = await createNotification(
+        await createNotification(
           product.seller_id,
           'notifications.messages.productRejected',
           'product',
           '/(tabs)/profile?tab=myItems',
           { productName: product.name }
         );
-
-        if (!notificationResult) {
-          console.warn('⚠️ Notification non créée, mais produit rejeté');
-        }
       }
 
       // 3. Mettre à jour l'état local
