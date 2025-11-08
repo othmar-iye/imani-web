@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../config/supabase';
 import './css/Dashboard.css';
 import Users from './Users';
+import Products from './Products';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -112,15 +113,7 @@ const Dashboard = () => {
       case 'utilisateur':
         return <Users />;
       case 'produit':
-        return (
-          <div className="page-content">
-            <div className="coming-soon">
-              <div className="coming-soon-icon">📦</div>
-              <h2>Section Produits</h2>
-              <p>Cette section sera bientôt disponible</p>
-            </div>
-          </div>
-        );
+        return <Products/>;
       case 'finance':
         return (
           <div className="page-content">
